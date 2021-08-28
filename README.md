@@ -1,2 +1,2 @@
 # halide-essentials
-book for Halide language programming
+document/ebook for Halide language programming

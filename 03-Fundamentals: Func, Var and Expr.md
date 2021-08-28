@@ -89,9 +89,10 @@ Even it is a single channel processing, in the straightforward implementation th
 
 In this example, the concept of Gaussian 3x3 is quite easy. For each output pixel of specific position, the pixel set required to calculate the value of output can be inferred by its coordinate.
 
-[//]: # (TODO add kernel image)
+<img src="./assets/03_gausian3x3.svg" title="Fig 3-1. applying gaussian 3x3 kernel" width="400" height="400">
 
-As the shown in the illustration, Gaussian 3x3 multiply 3x3 values to target postion and get the result. Therefore for every coordinate (x, y) the output of Gaussian 3x3 can be represented as a pure math function like:
+As shown in the Fig. 3-1, the process of each pixel of Gaussian3x3 is to multiply 3x3 kernel to target 3x3 square which is centered at the same coordinate of the corresponding output. Then the output value is done by summing of the results of multiplications and a division (divied by the sum of the 3x3 kernel values). Therefore for every coordinate (x, y) the output of Gaussian 3x3 can be represented as a pure math function like:
+
 ```
 out(x, y) = (
                 1*in(x-1, y-1) + 2*in(x, y-1) + 1*in(x+1, y-1) +
@@ -100,6 +101,26 @@ out(x, y) = (
             ) / 16;
 ```
 
+And let's try to apply **gauss3x3()** in the example 3.1. The code will look like:
+
+```
+// TODO - use gauss3x3 as the process in example of 3.1
+```
+
 
 ## 3.3 Func, Expr and Var
+
+Halide is a programming language embedded in C++. It provides three fundamental classes to programmers for image processing (mostly, in fact Halide can be used for many applications). Programmers must make use of the three classes to define the "Functions" used to manipulate images. The three classes are: Var, Expr and Func.
+
+**Func** - A Func object represents a stage in processing pipeline and it is the only schedulable object in Halide programming language. A **processing pipeline** is the whole flow of steps(of specific filter/kernel/function) from input source to output data. A Func object defines the correlation between arguments and expressions. An intuitive way to understand Func object is that it can be applied to an input data buffer and generates an data output buffer. It is worth to know that arguments of all Func objecst only have integer type. Since a Func is used for image process, the values of arguments come from the coordinate space of images.
+
+**Expr** - In official document Expr is described as: "implemented as reference-counted handle to a concrete expression node, but it's immutable, so you can treat it as a value type." In Halide programming's view, any manipulations or calculations of Var, Expr and Func objects generates Expr objects. And a Func object is defined by assigning an (implicit or emplicit) Expr object (even an expression of a simple Var object or complicated calculation of Var objects). For beginner it is difficult to tell the usage of Func and Expr objects. There are some key points of Expr object:
+* Expr object has no arguments but Func object does.
+* Expr object can't be scheduled (only Func can be scheduled)
+* Expr object can't be used for scheduling(only Var can be used for scheduling).
+A Expr is used as a symbol of complex flow. For optimization consideration, Expr objects are good points considered to be replaced by Func objects with same calculation expressions.
+
+**Var** - In official Halide document or tutorial, Var objects are describe as names of variables used in the definitions of Expr or Func objects and has no other meaning. Even it is true, but this statement makes programmer carelessly to think about Var. The Func and Expr objects consists of calculations and manipulations of Var objects. All of the scheduling of computation and storage are considered in the temporal or spatial granularity of Var objects. It is important to understand the relationship between a Var object and its role in a snippet of C code.
+
+
 
