@@ -105,8 +105,74 @@ out(x, y) = (
 And let's try to apply **gauss3x3()** in the example 3.1. The code will look like:
 
 ```
-// TODO - use gauss3x3 as the process in example of 3.1
+#include <iostream>
+using namespace std;
+
+#include "Halide.h"
+#include "halide_image_io.h"
+using namespace Halide::Tools;
+
+/*
+ * Assumptions:
+ * 1. input and output buffers have the same size.
+ * 2. the pitch value of the buffers is the width.
+ */
+void gauss3x3(uint8_t *in, uint8_t *out, int w, int h)
+{
+    // The kerenl of Gaussian 3x3 filter
+    int weight[3][3] = {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
+    for(int y = 0; y < h; y++){
+        for(int x = 0; x < w; x++){
+            // get the iteration for computing of each pixel
+            int sum = 0;
+
+            // apply 3x3 filter and accumulate
+            for(int oy = -1; oy <= 1; oy++){
+                for(int ox = -1; ox <= 1; ox++){
+
+                    // boundary handling
+                    int X = (x+ox) > 0 ? ((x+ox) < w ? x+ox : w-1) : 0;
+                    int Y = (y+oy) > 0 ? ((y+oy) < h ? y+oy : h-1) : 0;
+                    sum += *(in + Y*w + X) * weight[oy+1][ox+1];
+                }
+            }
+
+            // calculate final result and write out
+            *(out + y*w + x) = (uint8_t)(sum/16);
+        }
+    }
+}
+
+
+int main(int argc, char **argv) {
+
+    // open an image
+    Halide::Buffer<uint8_t> input = load_image("input.jpg");
+
+    cout << "width: " << input.width() << endl;
+    cout << "height: " << input.height() << endl;
+    cout << "channels: " << input.channels() << endl;
+
+    // create output image
+    Halide::Buffer<uint8_t> output(input.width(), input.height(), input.channels());
+    // get raw data buffer from the object
+    uint8_t *inbuf = input.get()->data();
+    uint8_t *outbuf = output.get()->data();
+
+    int len = input.width() * input.height() * input.channels();
+    for(int c = 0; c < input.channels(); c++){
+        // apply gaussian 3x3 to each channel planar
+        uint8_t *in = inbuf + c*(input.width() * input.height());
+        uint8_t *out = outbuf + c*(input.width() * input.height());
+        gauss3x3(in, out, input.width(), input.height());
+    }
+
+    save_image(output, "output.jpg");
+    return 0;
+}
 ```
+
+It just combines the two snippet of code and add a loop to process each channel planar. But if the **gauss3x3()** is inlined in the for-loop, the result code will look very complicated.
 
 
 ## 3.3 Func, Expr and Var
@@ -231,13 +297,13 @@ using namespace Halide;
 using namespace Halide::Tools;
 
 int main(int argc, char **argv) {
-    Halide::Buffer<uint8_t> input = load_image("input.jpg");
-    Halide::Var x, y, c;
-    Halide::Func _in, in;
+    Buffer<uint8_t> input = load_image("input.jpg");
+    Var x, y, c;
+    Func _in, in;
     _in = BoundaryConditions::repeat_edge(input);
     in(x, y, c) = cast<uint16_t>(_in(x, y, c));
 
-    Halide::Func gauss3x3;
+    Func gauss3x3;
     gauss3x3(x, y, c) = cast<uint8_t>(
         (
             1*in(x-1, y-1, c) + 2*in(x, y-1, c) + 1*in(x+1, y-1, c) +
@@ -246,9 +312,11 @@ int main(int argc, char **argv) {
         ) / 16
     );
 
-    Halide::Buffer<uint8_t> output = gauss3x3.realize(vector<int>{input.width(), input.height(), input.channels()});
+    Buffer<uint8_t> output = gauss3x3.realize(vector<int>{input.width(), input.height(), input.channels()});
     save_image(output, "output.jpg");
 
     return 0;
 }
 ```
+
+The Halide program is equivalent to the integration C implementation in section 3.2. But it is shorter and easy to read and understand.
