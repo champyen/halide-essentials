@@ -47,7 +47,15 @@ There are four directories under ~/halide/Halide-12.0.1-x86-64-linux/:
 
 For path consistency to **"Build Halide environment from source"** part, let's create a symbolic link "~/halide-sdk" which points to the folder:
 ```
-ln -sf ~/halide/Halide-12.0.1-x86-64-linux ~/halide-sdk
+$ ln -sf ~/halide/Halide-12.0.1-x86-64-linux ~/halide-sdk
+$ cd ~/halide-sdk
+$ ln -sf share/Halide/tools .
+```
+
+Please check the files in **~/halide-sdk** look like:
+```plaintext
+$ ls ~/halide-sdk
+bin  include  lib  share tools
 ```
 
 ---
@@ -72,8 +80,9 @@ $ git clone https://github.com/halide/Halide.git
 
 And then prepare the folder for the building:
 ```
-$ mkdir halide-sdk
-$ cd halide-sdk
+$ cd Halide
+$ mkdir halide-build
+$ cd halide-build
 ```
 
 We have to specify the following environment variables before building:
@@ -84,14 +93,34 @@ $ export CLANG=clang
 
 After all steps are done, Halide development environment can be built by the command:
 ```
-$ make -f ../Halide/Makefile -j$(nproc)
+$ make -f ../Makefile -j$(nproc)
 ```
 
-As the building finished, it will also have corresponding four folders in the released binary package:
+As the building finished, it will also have the folders:
 ```plaintext
 $ ls
 bin  distrib  include  lib
 ```
+
+Now we can link **distrib** folder to ~/halide-sdk
+```
+$ ln -sf ~/Halide/halide-build/distrib ~/halide-sdk/
+```
+
+The **distrib** folder contains all you need for Halide application development. This folder contains corresponding four folders in the released binary package.
+
+```plaintext
+$ ls distrib/
+bin  halide_config.cmake  halide_config.make  include  lib  README_cmake.md  README.md  README_rungen.md  README_webassembly.md  tools  tutorial
+```
+
+The **"bin" "include" "lib"** folders contain similar files in download tarball. The major difference between build downloaded SDK and built SDK is the path of **tools** folder.
+
+Binary package - **share/Halide/tools**
+
+Built - **distrib/tools**
+
+This is the reason we setup a symbolic link in binary release package.
 
 ---
 
